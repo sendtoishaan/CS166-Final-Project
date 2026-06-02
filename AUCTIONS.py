@@ -1,6 +1,5 @@
 from DATABASE_CONNECTION import query
  
- 
 def create_auction(seller_login: str, item_id: int) -> dict:
     item = query(
         "SELECT * FROM Item WHERE itemID = %s AND sellerLogin = %s",
