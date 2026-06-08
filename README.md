@@ -1,6 +1,6 @@
 # CS166 Online Auction and Bidding System Final Project
 
-A web-based online aution platform where users can open or join autions, list items, and place bids along with completing auction payments and shipment flow. This project is a three-tier application built upon PostgreSQL.
+A web-based online auction platform where users can open or join auctions, list items, and place bids along with completing auction payments and shipment flow. This project is a three-tier application built upon PostgreSQL.
 
 ## Project Structure:
 ```
@@ -20,12 +20,12 @@ CS166-Final-Project/
 ## Features:
 - Accounts and Authentication: user registration and login using SHA-256 hashed passwords for security/authentication.
 - Role-based Permissions: three different account roles('Buyer', 'Seller', and 'Admin').
-- List Items: accounts with 'Seller' role permissions can create and list items along with its category, price, condition, and a description.
-- Start/open Auctions: auctions can be created for an item (limited to one active auction per item). Users are able to browse, search, and filter active autions.
+- List Items: accounts can create and list items along with its category, price, condition, and a description.
+- Start/open Auctions: auctions can be created for an item (limited to one active auction per item). Users are able to browse active auctions.
 - Place Bids: accounts with 'Buyer' role permissions can place bids that have been validated, meaning that their bid must exceed the current highest bid. However, sellers cannot bid on their own listed items.
 - End/close Auctions: when an auction is closed or ends the auction picks the winning bid (current highest bid using the timestamp as a tie-breaker) and automatically creates a pending payment and shipment.
 - Payment and Shipments: track payment and shipment statuses.
-- Admin Controls: Controls that allow accounts with 'Admin' role permissions to view and edit other role accounts, auctions, and payments.
+- Admin Controls: Controls that allow accounts with 'Admin' role permissions to view other role accounts, auctions, and payments.
 
 ## Tools Used:
 - Programming Language: Python 3.10+
@@ -60,22 +60,12 @@ if on Windows:
 - $env:DB_PASSWORD="yourpassword"
 5. Run Streamlit App:
 - streamlit run MAIN_STREAMLIT_UI.py
-- Open 'https://localhost:8501' in browser
+- Open 'http://localhost:8501' in browser
 
 ## Accounts:
-- Admin-role Account:
-- User: admin
-- Password: admin123
-- Preset Name: alice, alice123
-- Seller-role Account:
-- User1: dave
-- Password1: dave123
-
-- User2: bob
-- Password2: bob123
-- Buyer-role Account:
-- User: eve
-- Password2: eve123
+- Admin: admin / admin123
+- Sellers: alice / alice123, dave / dave123
+- Buyers: bob / bob123, carol / carol123, eve / eve123
 
 ## System Rules:
 - Only an account with the 'Buyer' role can see the bid form and place bids.
@@ -94,7 +84,7 @@ if on Windows:
 | **login** | VARCHAR(50) | Primary key (the username) |
 | password | VARCHAR(255) | SHA-256 hash (stored by the app) |
 | phoneNum | VARCHAR(20) | Required |
-| role | VARCHAR(10) | `Buyer` \| `Seller` \| `Admin`, defaults to `Buyer` |
+| role | VARCHAR(10) | `Buyer` \| `Seller` \| ``, defaults to `Buyer` |
 | address | TEXT | Required; used as the default shipment address |
 | favoriteCategory | VARCHAR(100) | Optional |
 
@@ -126,7 +116,7 @@ if on Windows:
 
 
 ### Bid Table
-- Each individual bid plabed by a buyer on an auction
+- Each individual bid placed by a buyer on an auction
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -137,7 +127,7 @@ if on Windows:
 | bidTimestamp | TIMESTAMP | Defaults to the time placed |
 
 ### Payment Table
-- Table that is automatically created when an aution with a winning bid is closed.
+- Table that is automatically created when an auction with a winning bid is closed.
 
 | Column | Type | Notes |
 |--------|------|-------|
