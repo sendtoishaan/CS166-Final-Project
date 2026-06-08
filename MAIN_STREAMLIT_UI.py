@@ -136,6 +136,19 @@ else:
                     else:
                         st.error(res["error"])
 
+            can_close = (user["role"] == "Admin") or (auction["sellerlogin"] == user["login"])
+            if can_close and auction["auctionstatus"] == "Active":
+                if st.button("Close Auction"):
+                    res = AUCTIONS.close_auction(user["login"], aid, user["role"])
+                    if res["ok"]:
+                        winner = res["winner"]
+                        if winner:
+                            st.success(f"Auction closed. Winner: {winner['buyerlogin']} (${winner['bidamount']})")
+                        else:
+                            st.success("Auction closed with no bids.")
+                    else:
+                        st.error(res["error"])
+
     elif page == "My Bids":
         st.title("My Bids")
 
@@ -178,7 +191,7 @@ else:
         st.title("Create Auction")
 
         items = ITEMS.list_items(seller_login=user["login"])
-        item_map = {f"{i['itemid']} - {i['name']}": i["itemid"] for i in items}
+        item_map = {f"{i['itemid']} - {i['itemname']}": i["itemid"] for i in items}
 
         selected = st.selectbox("Select Item", list(item_map.keys()))
 
