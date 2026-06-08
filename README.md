@@ -3,6 +3,7 @@
 A web-based online aution platform where users can open or join autions, list items, and place bids along with completing auction payments and shipment flow. This project is a three-tier application built upon PostgreSQL.
 
 ## Project Structure:
+```
 CS166-Final-Project/
 ├── MAIN_STREAMLIT_UI.py
 ├── DATABASE_CONNECTION.py
@@ -15,7 +16,7 @@ CS166-Final-Project/
 ├── AUCTION_AND_BIDDING_SCHEMA.sql
 ├── SAMPLE_AUCTION_AND_BIDDING_DATA.sql
 └── README.md
-
+```
 ## Features:
 - Accounts and Authentication: user registration and login using SHA-256 hashed passwords for security/authentication.
 - Role-based Permissions: three different account roles('Buyer', 'Seller', and 'Admin').
