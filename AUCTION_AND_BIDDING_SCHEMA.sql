@@ -67,7 +67,7 @@ CREATE TABLE Bid (
 -- ============================================================
 CREATE TABLE Payment (
     paymentID       SERIAL        PRIMARY KEY,
-    auctionID       INTEGER       NOT NULL REFERENCES Auction(auctionID),
+    auctionID       INTEGER       NOT NULL UNIQUE REFERENCES Auction(auctionID),
     buyerLogin      VARCHAR(50)   NOT NULL REFERENCES Users(login),
     amount          NUMERIC(12,2) NOT NULL CHECK (amount > 0),
     paymentStatus   VARCHAR(10)   NOT NULL DEFAULT 'Pending'
@@ -79,7 +79,7 @@ CREATE TABLE Payment (
 -- ============================================================
 CREATE TABLE Shipment (
     shipmentID      SERIAL        PRIMARY KEY,
-    auctionID       INTEGER       NOT NULL REFERENCES Auction(auctionID),
+    auctionID       INTEGER       NOT NULL UNIQUE REFERENCES Auction(auctionID),
     address         TEXT          NOT NULL,
     shipmentStatus  VARCHAR(10)   NOT NULL DEFAULT 'Pending'
                         CHECK (shipmentStatus IN ('Pending', 'Shipped', 'Delivered')),

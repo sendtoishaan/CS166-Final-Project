@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from DATABASE_CONNECTION import query
 
 def place_bid(buyer_login: str, auction_id: int, bid_amount: float) -> dict:
@@ -14,7 +16,7 @@ def place_bid(buyer_login: str, auction_id: int, bid_amount: float) -> dict:
         return {"ok": False, "error": "This auction is not active."}
     
     if auction["sellerlogin"] == buyer_login:
-        return {"ok": False, "error": "Sellers cannot bid on their own auctions."}
+        return {"ok": False, "error": "You cannot bid on your own auction."}
     
     if bid_amount <= float(auction["currenthighestbid"]):
         return {

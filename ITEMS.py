@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from DATABASE_CONNECTION import query
 
 def create_item(seller_login: str, name: str, category: str, starting_price: float, description: str = None, condition: str = None, image_url: str = None) -> dict:

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from DATABASE_CONNECTION import query
+import PAYMENTS
  
 def create_auction(seller_login: str, item_id: int) -> dict:
     item = query(
@@ -110,29 +113,17 @@ def close_auction(seller_login: str, auction_id: int, role: str = "Seller") -> d
     )
     
     if winner:
-        query(
-            """
-            INSERT INTO Payment (auctionID, buyerLogin, amount, paymentStatus)
-            VALUES (%s, %s, %s, 'Pending')
-            ON CONFLICT DO NOTHING
-            """,
-            (auction_id, winner["buyerlogin"], winner["bidamount"]),
-            commit=True,
-        )
-
         buyer = query(
             "SELECT address FROM Users WHERE login = %s",
             (winner["buyerlogin"],),
             fetchone=True,
         )
-        
-        query(
-            """
-            INSERT INTO Shipment (auctionID, address, shipmentStatus)
-            VALUES (%s, %s, 'Pending')
-            """,
-            (auction_id, buyer["address"] if buyer else "TBD"),
-            commit=True,
+
+        PAYMENTS.create_payment_and_shipment(
+            auction_id=auction_id,
+            buyer_login=winner["buyerlogin"],
+            amount=float(winner["bidamount"]),
+            address=buyer["address"] if buyer else "TBD",
         )
     
     return {"ok": True, "winner": dict(winner) if winner else None}
