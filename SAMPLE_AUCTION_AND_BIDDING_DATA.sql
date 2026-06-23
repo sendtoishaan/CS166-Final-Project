@@ -42,3 +42,36 @@ UPDATE Auction SET currentHighestBid = 42.00  WHERE auctionID = 1;
 UPDATE Auction SET currentHighestBid = 72.50  WHERE auctionID = 2;
 UPDATE Auction SET currentHighestBid = 85.00  WHERE auctionID = 3;
 UPDATE Auction SET currentHighestBid = 115.00 WHERE auctionID = 4;
+
+-- Closed auction with completed payment and delivered shipment (for demo)
+INSERT INTO Bid (auctionID, buyerLogin, bidAmount, bidTimestamp) VALUES
+(5, 'eve', 55.00, NOW() - INTERVAL '1 day');
+
+UPDATE Auction SET currentHighestBid = 55.00, auctionStatus = 'Closed' WHERE auctionID = 5;
+
+INSERT INTO Payment (auctionID, buyerLogin, amount, paymentStatus) VALUES
+(5, 'eve', 55.00, 'Completed');
+
+INSERT INTO Shipment (auctionID, address, shipmentStatus, trackingNumber) VALUES
+(5, '654 Cedar Ln, Perris CA', 'Delivered', 'TRK-SAMPLE-005');
+
+-- Closed auction awaiting buyer payment
+INSERT INTO Bid (auctionID, buyerLogin, bidAmount, bidTimestamp) VALUES
+(4, 'carol', 120.00, NOW() - INTERVAL '30 minutes');
+
+UPDATE Auction SET currentHighestBid = 120.00, auctionStatus = 'Closed' WHERE auctionID = 4;
+
+INSERT INTO Payment (auctionID, buyerLogin, amount, paymentStatus) VALUES
+(4, 'carol', 120.00, 'Pending');
+
+INSERT INTO Shipment (auctionID, address, shipmentStatus) VALUES
+(4, '789 Maple Dr, Moreno Valley CA', 'Pending');
+
+-- Closed auction with payment completed, awaiting shipment
+UPDATE Auction SET auctionStatus = 'Closed' WHERE auctionID = 3;
+
+INSERT INTO Payment (auctionID, buyerLogin, amount, paymentStatus) VALUES
+(3, 'eve', 85.00, 'Completed');
+
+INSERT INTO Shipment (auctionID, address, shipmentStatus) VALUES
+(3, '654 Cedar Ln, Perris CA', 'Pending');

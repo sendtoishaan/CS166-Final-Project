@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from DATABASE_CONNECTION import query
 
 def get_user(login: str) -> dict | None:

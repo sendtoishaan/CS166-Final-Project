@@ -26,6 +26,260 @@ def login_user(login, password):
 def logout():
     st.session_state.user = None
 
+
+def _status_label(status: str) -> str:
+    icons = {
+        "Pending": "🟡",
+        "Completed": "🟢",
+        "Failed": "🔴",
+        "Shipped": "🔵",
+        "Delivered": "🟢",
+    }
+    return f"{icons.get(status, '⚪')} {status}"
+
+
+def _render_seller_ship_controls(user, shipment_id, payment_status, shipment_status, tracking_number=None, key_prefix="ship"):
+    """Shared ship / deliver controls for sellers and admins."""
+    role = user["role"]
+    payment_status = payment_status or "Pending"
+    shipment_status = shipment_status or "Pending"
+
+    if shipment_status == "Pending":
+        if payment_status != "Completed":
+            st.warning("Waiting for the buyer to complete payment before you can ship.")
+        else:
+            st.success("Payment received — ready to ship.")
+            tracking = st.text_input(
+                "Tracking number",
+                value=tracking_number or "",
+                key=f"{key_prefix}_tracking_{shipment_id}",
+            )
+            if st.button("Mark as Shipped", key=f"{key_prefix}_mark_shipped_{shipment_id}"):
+                res = PAYMENTS.update_shipment(
+                    user["login"],
+                    role,
+                    shipment_id,
+                    "Shipped",
+                    tracking_number=tracking,
+                )
+                if res["ok"]:
+                    st.success("Shipment marked as shipped.")
+                    st.rerun()
+                else:
+                    st.error(res["error"])
+
+    elif shipment_status == "Shipped":
+        st.info(f"Item shipped. Tracking: {tracking_number or 'N/A'}")
+        if st.button("Mark as Delivered", key=f"{key_prefix}_mark_delivered_{shipment_id}"):
+            res = PAYMENTS.update_shipment(
+                user["login"], role, shipment_id, "Delivered"
+            )
+            if res["ok"]:
+                st.success("Shipment marked as delivered.")
+                st.rerun()
+            else:
+                st.error(res["error"])
+
+    elif shipment_status == "Delivered":
+        st.success("Order delivered.")
+
+
+def _render_payments_page(user):
+    role = user["role"]
+    if role == "Seller":
+        payments = PAYMENTS.get_seller_fulfillment(user["login"])
+    else:
+        payments = PAYMENTS.get_payments(user["login"], role)
+
+    if role == "Buyer":
+        st.caption("Complete payment for auctions you won. Sellers ship after payment is completed.")
+    elif role == "Seller":
+        st.caption("Track buyer payments and ship items once payment is completed.")
+    else:
+        st.caption("View and manage all auction payments.")
+
+    if not payments:
+        st.info("No payments yet. Payments are created automatically when an auction with bids is closed.")
+        return
+
+    for payment in payments:
+        payment_id = payment["paymentid"]
+        item_name = payment.get("itemname", "Unknown item")
+        status = payment.get("paymentstatus", "Pending")
+        shipment_id = payment.get("shipmentid")
+        shipment_status = payment.get("shipmentstatus")
+
+        with st.container(border=True):
+            st.subheader(item_name)
+            st.write(f"**Payment ID:** {payment_id}")
+            st.write(f"**Auction ID:** {payment['auctionid']}")
+            st.write(f"**Amount:** ${float(payment['amount']):.2f}")
+            st.write(f"**Payment Status:** {_status_label(status)}")
+
+            if role in ("Seller", "Admin"):
+                st.write(f"**Buyer:** {payment['buyerlogin']}")
+            if role in ("Buyer", "Admin") and payment.get("sellerlogin"):
+                st.write(f"**Seller:** {payment['sellerlogin']}")
+
+            if role == "Seller":
+                if status == "Completed":
+                    st.success("Buyer has paid for this item.")
+                elif status == "Failed":
+                    st.error("Buyer payment failed.")
+                else:
+                    st.warning("Waiting for buyer to complete payment.")
+
+                if shipment_status:
+                    st.write(f"**Shipment Status:** {_status_label(shipment_status)}")
+                    if payment.get("shipaddress"):
+                        st.write(f"**Ship To:** {payment['shipaddress']}")
+
+                if shipment_id and role == "Seller":
+                    st.markdown("---")
+                    _render_seller_ship_controls(
+                        user,
+                        shipment_id,
+                        status,
+                        shipment_status,
+                        payment.get("trackingnumber"),
+                        key_prefix="pay_ship",
+                    )
+
+            if role == "Buyer" and status == "Pending":
+                st.markdown("---")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Complete Payment", key=f"pay_complete_{payment_id}"):
+                        res = PAYMENTS.complete_payment(user["login"], payment_id)
+                        if res["ok"]:
+                            st.success("Payment marked as completed.")
+                            st.rerun()
+                        else:
+                            st.error(res["error"])
+                with col2:
+                    if st.button("Mark Failed", key=f"pay_fail_{payment_id}"):
+                        res = PAYMENTS.fail_payment(user["login"], payment_id)
+                        if res["ok"]:
+                            st.warning("Payment marked as failed.")
+                            st.rerun()
+                        else:
+                            st.error(res["error"])
+
+            if role == "Admin":
+                st.markdown("---")
+                new_status = st.selectbox(
+                    "Update status (Admin)",
+                    PAYMENTS.VALID_PAYMENT_STATUSES,
+                    index=PAYMENTS.VALID_PAYMENT_STATUSES.index(status),
+                    key=f"admin_pay_status_{payment_id}",
+                )
+                if st.button("Update Payment", key=f"admin_pay_update_{payment_id}"):
+                    res = PAYMENTS.update_payment_status(
+                        user["login"], role, payment_id, new_status
+                    )
+                    if res["ok"]:
+                        st.success("Payment updated.")
+                        st.rerun()
+                    else:
+                        st.error(res["error"])
+
+
+def _render_shipments_page(user):
+    role = user["role"]
+    shipments = PAYMENTS.get_shipments(user["login"], role)
+
+    if role == "Buyer":
+        st.caption("Track your orders. Update the shipping address before the seller ships.")
+    elif role == "Seller":
+        st.caption("Ship items after the buyer's payment is completed.")
+    else:
+        st.caption("View and manage all shipments.")
+
+    if not shipments:
+        st.info("No shipments yet. Shipments are created automatically when an auction with bids is closed.")
+        return
+
+    for shipment in shipments:
+        shipment_id = shipment["shipmentid"]
+        item_name = shipment.get("itemname", "Unknown item")
+        status = shipment["shipmentstatus"]
+
+        # Always fetch fresh payment status for seller/admin views
+        payment = PAYMENTS.get_payment_for_auction(shipment["auctionid"])
+        payment_status = payment["paymentstatus"] if payment else shipment.get("paymentstatus", "Unknown")
+
+        with st.container(border=True):
+            st.subheader(item_name)
+            st.write(f"**Shipment ID:** {shipment_id}")
+            st.write(f"**Auction ID:** {shipment['auctionid']}")
+            st.write(f"**Ship To:** {shipment['address']}")
+            st.write(f"**Payment Status:** {_status_label(payment_status)}")
+            st.write(f"**Shipment Status:** {_status_label(status)}")
+
+            if payment:
+                st.write(f"**Amount Paid:** ${float(payment['amount']):.2f}")
+
+            if shipment.get("trackingnumber"):
+                st.write(f"**Tracking Number:** {shipment['trackingnumber']}")
+
+            if role in ("Seller", "Admin") and shipment.get("buyerlogin"):
+                st.write(f"**Buyer:** {shipment['buyerlogin']}")
+
+            if role == "Buyer" and status == "Pending":
+                st.markdown("---")
+                new_address = st.text_input(
+                    "Update shipping address",
+                    value=shipment["address"],
+                    key=f"ship_address_{shipment_id}",
+                )
+                if st.button("Save Address", key=f"ship_save_address_{shipment_id}"):
+                    res = PAYMENTS.update_shipment_address(
+                        user["login"], shipment_id, new_address
+                    )
+                    if res["ok"]:
+                        st.success("Shipping address updated.")
+                        st.rerun()
+                    else:
+                        st.error(res["error"])
+
+            if role in ("Seller", "Admin") and status in ("Pending", "Shipped"):
+                st.markdown("---")
+                _render_seller_ship_controls(
+                    user,
+                    shipment_id,
+                    payment_status,
+                    status,
+                    shipment.get("trackingnumber"),
+                    key_prefix="ship_page",
+                )
+
+            if role == "Admin":
+                st.markdown("---")
+                new_status = st.selectbox(
+                    "Update status (Admin)",
+                    PAYMENTS.VALID_SHIPMENT_STATUSES,
+                    index=PAYMENTS.VALID_SHIPMENT_STATUSES.index(status),
+                    key=f"admin_ship_status_{shipment_id}",
+                )
+                admin_tracking = st.text_input(
+                    "Tracking number (optional)",
+                    value=shipment.get("trackingnumber") or "",
+                    key=f"admin_ship_tracking_{shipment_id}",
+                )
+                if st.button("Update Shipment", key=f"admin_ship_update_{shipment_id}"):
+                    res = PAYMENTS.update_shipment(
+                        user["login"],
+                        role,
+                        shipment_id,
+                        new_status,
+                        tracking_number=admin_tracking,
+                    )
+                    if res["ok"]:
+                        st.success("Shipment updated.")
+                        st.rerun()
+                    else:
+                        st.error(res["error"])
+
 st.sidebar.title("Navigation")
 
 if st.session_state.user:
@@ -126,15 +380,26 @@ else:
             st.write("Bids:")
             st.write(bids)
 
-            if user["role"] == "Buyer":
-                amount = st.number_input("Bid Amount", min_value=0.0)
+            if auction["auctionstatus"] == "Active":
+                if auction["sellerlogin"] == user["login"]:
+                    st.info("You cannot bid on your own auction.")
+                else:
+                    min_bid = float(auction["currenthighestbid"]) + 0.01
+                    amount = st.number_input(
+                        "Bid Amount",
+                        min_value=min_bid,
+                        value=min_bid,
+                        step=0.01,
+                        format="%.2f",
+                    )
 
-                if st.button("Place Bid"):
-                    res = BIDS.place_bid(user["login"], aid, amount)
-                    if res["ok"]:
-                        st.success("Bid placed")
-                    else:
-                        st.error(res["error"])
+                    if st.button("Place Bid"):
+                        res = BIDS.place_bid(user["login"], aid, amount)
+                        if res["ok"]:
+                            st.success("Bid placed")
+                            st.rerun()
+                        else:
+                            st.error(res["error"])
 
             can_close = (user["role"] == "Admin") or (auction["sellerlogin"] == user["login"])
             if can_close and auction["auctionstatus"] == "Active":
@@ -143,7 +408,10 @@ else:
                     if res["ok"]:
                         winner = res["winner"]
                         if winner:
-                            st.success(f"Auction closed. Winner: {winner['buyerlogin']} (${winner['bidamount']})")
+                            st.success(
+                                f"Auction closed. Winner: {winner['buyerlogin']} "
+                                f"(${winner['bidamount']}). Pending payment and shipment created."
+                            )
                         else:
                             st.success("Auction closed with no bids.")
                     else:
@@ -205,22 +473,18 @@ else:
 
     elif page == "Payments":
         st.title("Payments")
-
-        data = PAYMENTS.get_payments(user["login"], user["role"])
-        st.write(data)
+        _render_payments_page(user)
 
     elif page == "Shipments":
         st.title("Shipments")
-
-        data = PAYMENTS.get_shipments(user["login"], user["role"])
-        st.write(data)
+        _render_shipments_page(user)
 
     elif page == "Profile":
         st.title("Profile")
 
         st.write(user)
 
-        phone = st.text_input("Phone", value=user.get("phone", ""))
+        phone = st.text_input("Phone", value=user.get("phonenum", ""))
         address = st.text_input("Address", value=user.get("address", ""))
 
         if st.button("Update"):
@@ -248,4 +512,7 @@ else:
             st.write(AUCTIONS.list_auctions())
 
             st.subheader("Payments")
-            st.write(PAYMENTS.get_payments("", "Admin"))
+            _render_payments_page(user)
+
+            st.subheader("Shipments")
+            _render_shipments_page(user)
