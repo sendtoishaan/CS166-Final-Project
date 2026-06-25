@@ -13,11 +13,11 @@ INSERT INTO Users (login, password, phoneNum, role, address, favoriteCategory) V
  
 -- Items
 INSERT INTO Item (itemName, category, startingPrice, description, condition, imageURL, sellerLogin) VALUES
-('Vintage Polaroid Camera',   'Electronics',   25.00, 'Classic instant camera in great shape.',    'Good',      NULL, 'alice'),
-('First Edition Dune Novel',  'Books',         50.00, 'First edition, some wear on cover.',        'Fair',      NULL, 'alice'),
-('Nike Air Jordan 1980s',     'Sports',        75.00, 'Rare vintage sneakers, size 10.',           'Excellent', NULL, 'dave'),
-('Baseball Card Collection',  'Collectibles', 100.00, '50-card lot, includes some rookies.',       'Good',      NULL, 'dave'),
-('Sony Walkman TPS-L2',       'Electronics',   40.00, 'Original 1979 model, fully functional.',   'Good',      NULL, 'alice');
+('Vintage Polaroid Camera',        'Electronics',      25.00, 'Classic instant camera in great shape.',              'Good',      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&q=80', 'alice'),
+('First Edition Dune Novel',       'Books',            50.00, 'First edition, some wear on cover.',                  'Fair',      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&q=80', 'alice'),
+('Nike Air Jordan 1980s',          'Sports',           75.00, 'Rare vintage sneakers, size 10.',                     'Excellent', 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80', 'dave'),
+('Baseball Card Collection',       'Collectibles',    100.00, '50-card lot, includes some rookies.',                'Good',      'https://images.unsplash.com/photo-1587280503325-4a5106115ec9?w=800&q=80', 'dave'),
+('Stanley Quencher 40oz Tumbler',  'Home & Kitchen',   40.00, 'Insulated stainless steel water bottle, like new.',  'Like New',  'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80', 'alice');
  
 -- Auctions (Active)
 INSERT INTO Auction (itemID, sellerLogin, currentHighestBid, auctionStatus) VALUES
