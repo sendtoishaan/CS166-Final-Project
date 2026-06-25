@@ -8,3 +8,13 @@ serverAddress = "localhost"
 
 [global]
 developmentMode = false
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+primaryColor = "#D4A853"
+backgroundColor = "#0C1220"
+secondaryBackgroundColor = "#1A2438"
+textColor = "#E8ECF4"
+font = "sans serif"
